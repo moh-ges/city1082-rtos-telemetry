@@ -10,6 +10,7 @@
 
 typedef struct {
     float    temperature;   /* AD result of measured temperature  */
+    // adding to test github
     float    lightLevel;    /* AD result of measured lightLevel   */
     int counter;            /* A counter value                    */
 } message_t;
