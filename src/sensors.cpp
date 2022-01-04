@@ -14,6 +14,7 @@ void sendThread(void)
     DigitalOut ground(THERM_GND);
     DigitalOut vcc(THERM_VCC);
     AnalogIn tempVoltage(THERM_OUT);
+    // making a change
 
     float    temp;  // AD result of measured voltage 
     float    lightLev;   // AD result of measured current

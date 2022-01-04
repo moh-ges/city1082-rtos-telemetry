@@ -9,6 +9,7 @@
 #include "display.h"
 #include "sensors.h"
 
+// This is my version of main.cpp
 
 Thread sendingThreadHandle;
 Thread displayThreadHandle;
