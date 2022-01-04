@@ -10,6 +10,7 @@
 #include "sensors.h"
 
 // This is my version of main.cpp
+// this is my second comment
 
 Thread sendingThreadHandle;
 Thread displayThreadHandle;
