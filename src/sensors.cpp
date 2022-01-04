@@ -14,7 +14,9 @@ void sendThread(void)
     DigitalOut ground(THERM_GND);
     DigitalOut vcc(THERM_VCC);
     AnalogIn tempVoltage(THERM_OUT);
-    // making a change
+    // initialise the thermistor power
+    vcc= true;
+    ground = false;
 
     float    temp;  // AD result of measured voltage 
     float    lightLev;   // AD result of measured current
@@ -22,8 +24,7 @@ void sendThread(void)
     uint32_t i = 0;
     while (true) {
         i++; // fake data update
-        temp = fmod((i * 0.1f/*the temp */) * \
-                    3.3f, 40);
+        temp = tempVoltage.read() * 3.3f;
         lightLev = fmod((i * 0.1f) * 5.5f, 100);
         cycles = i;
         displaySendUpdateSensor(temp, lightLev, cycles);
