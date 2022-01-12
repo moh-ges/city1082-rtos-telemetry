@@ -2,11 +2,6 @@
 #include "display.h"
 #include <cmath>
 
-#define THERM_GND P10_0
-#define THERM_VCC P10_3
-#define THERM_OUT P10_1
-
-
 #define THERM_GND P10_3
 #define THERM_VCC P10_0
 #define THERM_OUT P10_1
@@ -24,7 +19,10 @@
 /* Zero Kelvin in degree C */
 #define ABSOLUTE_ZERO                       (float)(-273.15)
 
+#define LDR_PORT    P10_4
+
 AnalogIn tempVoltage(THERM_OUT);
+AnalogIn lightLevel(LDR_PORT);
 
 /* Send Thread */
 float readTemp();
@@ -47,7 +45,8 @@ void sendThread(void)
         float temperature;
 
         temperature = readTemp();
-        lightLev = fmod((i * 0.1f) * 5.5f, 100);
+
+        lightLev = (1-lightLevel.read())*100.0f;
         cycles = i;
         displaySendUpdateSensor(temperature, lightLev, cycles);
         ThisThread::sleep_for(1s);
