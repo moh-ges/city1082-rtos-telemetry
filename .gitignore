@@ -4,3 +4,7 @@ mbed-os
 compile_commands?json
 ?clangd
 ?cache
+.mbed
+compile_commands.json
+.clangd
+.cache
