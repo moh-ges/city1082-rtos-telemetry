@@ -46,7 +46,7 @@ void sendThread(void)
 
         temperature = readTemp();
 
-        lightLev = (1-lightLevel.read())*100.0f;
+        lightLev = (lightLevel.read())*100.0f;
         cycles = i;
         displaySendUpdateSensor(temperature, lightLev, cycles);
         ThisThread::sleep_for(1s);
