@@ -30,11 +30,11 @@ float readTemp();
 void sendThread(void)
 {
     // this is for reading the thermistor
-    DigitalOut ground(THERM_GND);
-    DigitalOut vcc(THERM_VCC);
+    // DigitalOut ground(THERM_GND); // Now permanent connection to power
+    // DigitalOut vcc(THERM_VCC);    // so redundant.
     // initialise the thermistor power
-    vcc= false;
-    ground = true;
+    // vcc= false;
+    // ground = true;
 
     float    temp;  // AD result of measured voltage 
     float    lightLev;   // AD result of measured current
