@@ -7,45 +7,56 @@
 #include <iostream>
 #include <iomanip>
 #include "display.h"
+#include "vt100.h"
 
 typedef struct {
-    float    temperature;   /* AD result of measured temperature  */
-    float    lightLevel;    /* AD result of measured lightLevel   */
-    int counter;            /* A counter value                    */
+    int     type;           /* The type of data 0 = Temperature   */
+                            /*                  1 = Light Level   */
+                            /*                  2 = ToDo          */
+    float   value;          /* AD result of measured temperature  */
 } message_t;
 
 static MemoryPool<message_t, 32> mpool;
 static Queue<message_t, 32> queue;
 
-void displaySendUpdateSensor(float temperature, float lightLevel, int cycles) {
+void displaySendUpdateSensor(int topic, float reading) {
     message_t *message = mpool.try_alloc();
     if(message) {
-        message->temperature =  temperature;
-        message->lightLevel = lightLevel;
-        message->counter = cycles;
+        message->type =  topic;
+        message->value = reading;
         queue.try_put(message);
     }
 }
 
 void displayThread(void)
 {
-    cout << "\033c" << "\033[?25l" << endl;
-    std::cout << "\033[H" 
+    cout << "\033c" ;  // Reset terminal
+    ThisThread::sleep_for(100ms);
+    cout << "\033)A";  // Select UK Character Set
+    ThisThread::sleep_for(10ms);
+//    cout << "\033(0";  // Select Graphics set 0
+//    ThisThread::sleep_for(10ms);
+    cout << "\033[?25l" << endl;  // Clear Display
+    ThisThread::sleep_for(100ms);
+    std::cout << "\033[H"   // Cursor to 1, 1 (0, 0) HOME
          << "Temperature:               C\r\n"
-         << "Light Level:               \%\r\n"
-         << "Number of Cycles\r\n";
+         << "Light Level:               \%\r\n";
     while (true) {
         message_t *message;
-      auto event = queue.try_get(&message);
-      if (event) {
-        std::cout << "\033[1;21H" << std::fixed << std::setw(6)
-                  << std::setprecision(1) << (message->temperature);
-        std::cout << "\033[2;21H" << std::fixed << std::setw(6)
-                  << std::setprecision(1) << (message->lightLevel);
-        std::cout << "\033[3;19H"
-                  << std::setw(6)
-                  << (message->counter) << std::endl;
-        mpool.free(message);
+        auto event = queue.try_get(&message);
+        ThisThread::sleep_for(1ms);
+if (event) {
+          switch(message->type) {
+                case TEMP:
+                    std::cout << "\033[1;21H" << std::fixed << std::setw(6)
+                        << std::setprecision(1) << (message->value);
+                    break;
+                case LIGHT:
+                    std::cout << "\033[2;21H" << std::fixed << std::setw(6)
+                    << std::setprecision(1) << (message->value);
+                    break;
+            }
+            mpool.free(message);
         }
     }
 }

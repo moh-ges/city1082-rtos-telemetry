@@ -8,15 +8,18 @@
 #include <iomanip>
 #include "display.h"
 #include "sensors.h"
+#include "status.h"
 
 // This is my version of main.cpp Andrew
 // this is my second comment
 
 Thread sendingThreadHandle;
 Thread displayThreadHandle;
+Thread statusRunningThreadHandle;
 
 int main(void)
 {
     sendingThreadHandle.start(callback(sendThread));
     displayThreadHandle.start(callback(displayThread));
+    statusRunningThreadHandle.start(callback(statusThread));
 }

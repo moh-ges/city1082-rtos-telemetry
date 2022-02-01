@@ -2,9 +2,11 @@
 #include "display.h"
 #include <cmath>
 
-#define THERM_GND P10_3
-#define THERM_VCC P10_0
+//#define THERM_GND P10_3
+//#define THERM_VCC P10_0
 #define THERM_OUT P10_1
+
+
 
 /* Reference resistor in series with the thermistor is of 10kohm */
 #define R_REFERENCE                         (float)(10000)
@@ -26,6 +28,7 @@ AnalogIn lightLevel(LDR_PORT);
 
 /* Send Thread */
 float readTemp();
+float readLight();
 
 void sendThread(void)
 {
@@ -41,14 +44,15 @@ void sendThread(void)
     int      cycles;       // A counter value               
     uint32_t i = 0;
     while (true) {
-        i++; // fake data update
+    //    i++; // fake data update
         float temperature;
 
         temperature = readTemp();
+        lightLev = readLight();
 
-        lightLev = (lightLevel.read())*100.0f;
-        cycles = i;
-        displaySendUpdateSensor(temperature, lightLev, cycles);
+    //    cycles = i;
+        displaySendUpdateSensor(TEMP, temperature);
+        displaySendUpdateSensor(LIGHT, lightLev);
         ThisThread::sleep_for(1s);
         
     }
@@ -66,4 +70,9 @@ float readTemp()
                              ((C_COEFF) * pow((float64)logrT, (float32)3)));
     float temperatureC = (float32_t)(((1.0 / stEqn) + ABSOLUTE_ZERO)  + 0.05);
     return temperatureC;
+}
+
+float readLight()
+{
+    return (lightLevel.read())*100.0f;
 }
