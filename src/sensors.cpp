@@ -53,7 +53,7 @@ void sendThread(void)
     //    cycles = i;
         displaySendUpdateSensor(TEMP, temperature);
         displaySendUpdateSensor(LIGHT, lightLev);
-        ThisThread::sleep_for(1s);
+        ThisThread::sleep_for(100ms);
         
     }
 }
