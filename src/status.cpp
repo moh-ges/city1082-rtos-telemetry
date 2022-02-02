@@ -5,7 +5,7 @@
 #include "status.h"
 
 void statusThread() {
-    DigitalOut statusLed(P10_0);
+    DigitalOut statusLed(P13_7);
     while (true) {
         
         statusLed = !statusLed;
