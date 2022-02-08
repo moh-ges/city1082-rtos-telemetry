@@ -14,6 +14,15 @@
 #define HUMID_HIGH_THRESH 22
 #define HUMID_SET_VALUE 23
 
+struct dataSet{
+    float temperature;
+    float tempSet = 18;
+    bool heaterStatus = false;
+    float lightLevel;
+    float lightSet= 50;
+    bool lightStatus = false;
+};
+
 void displayThread();
 void displaySendUpdateSensor(int, float);
 

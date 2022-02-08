@@ -16,6 +16,7 @@ typedef struct {
     float   value;          /* AD result of measured temperature  */
 } message_t;
 
+extern struct dataSet myData;
 static MemoryPool<message_t, 32> mpool;
 static Queue<message_t, 32> queue;
 

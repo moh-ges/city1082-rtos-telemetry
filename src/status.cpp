@@ -3,6 +3,9 @@
 #include <iostream>
 #include <iomanip>
 #include "status.h"
+#include "display.h"
+
+extern struct dataSet myData;
 
 void statusThread() {
     DigitalOut statusLed(P13_7);
