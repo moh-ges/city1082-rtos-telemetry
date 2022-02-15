@@ -20,8 +20,16 @@ void actuatorsThread() {
         else if (myData.temperature > myData.tempSet) {
             heatIndicator = false;
         }
-        myData.lightStatus = lightIndicator;
-        myData.heaterStatus = heatIndicator;
+        if (myData.lightStatus == lightIndicator) {
+            myData.lightStatus = lightIndicator;
+            displaySendUpdateSensor(LIGHT_STATUS, lightIndicator);
+        }
+        if (myData.heaterStatus == heatIndicator) {
+            myData.heaterStatus = heatIndicator;
+            displaySendUpdateSensor(HEATER_STATUS, heatIndicator);
+        }
+
+
         ThisThread::sleep_for(10ms);
     }
 
