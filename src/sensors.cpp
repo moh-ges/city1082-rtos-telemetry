@@ -50,9 +50,13 @@ void sendThread(void)
             ThisThread::sleep_for(10ms);
         }
     displaySendUpdateSensor(TEMP_SET_VALUE, myData.tempSet);
+            ThisThread::sleep_for(10ms);
     displaySendUpdateSensor(HEATER_STATUS, myData.heaterStatus);
+            ThisThread::sleep_for(10ms);
     displaySendUpdateSensor(LIGHT_SET_VALUE, myData.lightSet);
+            ThisThread::sleep_for(10ms);
     displaySendUpdateSensor(LIGHT_STATUS, myData.lightStatus);
+            ThisThread::sleep_for(10ms);
     while (true) {
     //    i++; // fake data update
         //float temperature;

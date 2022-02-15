@@ -41,8 +41,9 @@ void displayThread(void)
     cout << "\033[?25l" ;  // Hide Cursor
     ThisThread::sleep_for(100ms);
     std::cout << "\033[2;1H"   // Cursor to 1, 1 (0, 0) HOME
-         << "Temperature:         C   Set Temp:             C   Heater Status:      \r\n"
-         << "Light Level:         \%   Set Light:            \%   Light Status:       \r\n";
+         << "\033[1;37m"
+         << "Temperature:         C   Set Temp:         C   Heater Status:      \r\n"
+         << "Light Level:         \%   Set Light:        \%   Light Status:       \r\n";
     displayUp = true;
     while (true) {
         message_t *message;
@@ -55,22 +56,26 @@ if (event) {
                         << std::setprecision(1) << (message->value);
                     break;
                 case TEMP_SET_VALUE:
-                    std::cout << "\033[2;35H" << std::fixed << std::setw(6)
+                    std::cout << "\033[2;37H" << std::fixed << std::setw(6)
                         << std::setprecision(1) << (message->value);
                     break;
                 case HEATER_STATUS:
-                    std::cout << "\033[2;55H" << ((message->value)?"ON  ":"OFF");
+                    std::cout << "\033[2;63H" << (static_cast<bool>(message->value)?
+                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
                     break;
                 case LIGHT:
                     std::cout << "\033[3;15H" << std::fixed << std::setw(6)
                     << std::setprecision(1) << (message->value);
                     break;
                 case LIGHT_SET_VALUE:
-                    std::cout << "\033[3;35H" << std::fixed << std::setw(6)
+                    std::cout << "\033[3;37H" << std::fixed << std::setw(6)
                     << std::setprecision(1) << (message->value);
                     break;
                 case LIGHT_STATUS:
-                    std::cout << "\033[3;55H" << ((message->value)?"ON  ":"OFF");
+                    std::cout << "\033[3;63H" << (static_cast<bool>(message->value)?
+                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
+                    break;
+                default:
                     break;
             }
             mpool.free(message);
