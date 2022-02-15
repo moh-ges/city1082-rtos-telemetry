@@ -11,8 +11,8 @@
 
 typedef struct {
     int     type;           /* The type of data 0 = Temperature   */
-                            /*                  1 = Light Level   */
-                            /*                  2 = ToDo          */
+                            /*                 10 = Light Level   */
+                            /*                 20 = ToDo          */
     float   value;          /* AD result of measured temperature  */
 } message_t;
 
@@ -32,12 +32,12 @@ void displaySendUpdateSensor(int topic, float reading) {
 void displayThread(void)
 {
     cout << "\033c" ;  // Reset terminal
-    ThisThread::sleep_for(100ms);
+    ThisThread::sleep_for(500ms);
     cout << "\033)A";  // Select UK Character Set
-    ThisThread::sleep_for(10ms);
+    ThisThread::sleep_for(100ms);
 //    cout << "\033(0";  // Select Graphics set 0
 //    ThisThread::sleep_for(10ms);
-    cout << "\033[?25l" << endl;  // Clear Display
+    cout << "\033[?25l" ;  // Hide Cursor
     ThisThread::sleep_for(100ms);
     std::cout << "\033[H"   // Cursor to 1, 1 (0, 0) HOME
          << "Temperature:               C\r\n"

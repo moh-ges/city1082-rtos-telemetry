@@ -43,7 +43,7 @@ void sendThread(void)
     //float    temp;  // AD result of measured voltage 
     //float    lightLev;   // AD result of measured current
     //int      cycles;       // A counter value               
-    uint32_t i = 0;
+    // uint32_t i = 0;
     while (true) {
     //    i++; // fake data update
         //float temperature;

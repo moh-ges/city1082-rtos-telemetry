@@ -24,8 +24,6 @@ Thread actuatorThreadHandle;
 
 int main(void)
 {
-    myData.tempSet = 24;
-    myData.lightSet = 40;
 
     sendingThreadHandle.start(callback(sendThread));
     displayThreadHandle.start(callback(displayThread));
