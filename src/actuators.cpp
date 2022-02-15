@@ -8,16 +8,16 @@ void actuatorsThread() {
     DigitalOut lightIndicator(P12_3);
     DigitalOut heatIndicator(P0_5);
     while(true){
-        if (myData.lightLevel < myData.lightSet) {
+        if (myData.lightLevel < myData.lightSet - myData.lightThresh) {
             lightIndicator = true;
         }
-        else if (myData.lightLevel > myData.lightSet) {
+        else if (myData.lightLevel > myData.lightSet + myData.lightThresh) {
             lightIndicator = false;
         }
-        if (myData.temperature < myData.tempSet) {
+        if (myData.temperature < myData.tempSet - myData.tempThresh) {
             heatIndicator = true;
         }
-        else if (myData.temperature > myData.tempSet) {
+        else if (myData.temperature > myData.tempSet + myData.tempThresh) {
             heatIndicator = false;
         }
         if (myData.lightStatus != lightIndicator) {
