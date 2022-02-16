@@ -27,6 +27,7 @@ AnalogIn tempVoltage(THERM_OUT);
 AnalogIn lightLevel(LDR_PORT);
 
 extern struct dataSet myData;
+extern bool displayUp;
 /* Send Thread */
 float readTemp();
 float readLight();
@@ -44,6 +45,18 @@ void sendThread(void)
     //float    lightLev;   // AD result of measured current
     //int      cycles;       // A counter value               
     // uint32_t i = 0;
+    while (displayUp == false)
+        {
+            ThisThread::sleep_for(10ms);
+        }
+    displaySendUpdateSensor(TEMP_SET_VALUE, myData.tempSet);
+            ThisThread::sleep_for(10ms);
+    displaySendUpdateSensor(HEATER_STATUS, myData.heaterStatus);
+            ThisThread::sleep_for(10ms);
+    displaySendUpdateSensor(LIGHT_SET_VALUE, myData.lightSet);
+            ThisThread::sleep_for(10ms);
+    displaySendUpdateSensor(LIGHT_STATUS, myData.lightStatus);
+            ThisThread::sleep_for(10ms);
     while (true) {
     //    i++; // fake data update
         //float temperature;
