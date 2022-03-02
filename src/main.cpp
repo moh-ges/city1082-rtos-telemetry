@@ -10,6 +10,7 @@
 #include "sensors.h"
 #include "status.h"
 #include "actuators.h"
+#include "mqtt.h"
 
 // This is my version of main.cpp Andrew
 
@@ -21,6 +22,7 @@ Thread sendingThreadHandle;
 Thread displayThreadHandle;
 Thread statusRunningThreadHandle;
 Thread actuatorThreadHandle;
+Thread mqttThreadHandle;
 
 int main(void)
 {
@@ -29,5 +31,6 @@ int main(void)
     displayThreadHandle.start(callback(displayThread));
     statusRunningThreadHandle.start(callback(statusThread));
     actuatorThreadHandle.start(callback(actuatorsThread));
+    mqttThreadHandle.start(callback(mqttThread));
     /* never get here */
 }
