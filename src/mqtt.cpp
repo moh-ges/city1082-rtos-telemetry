@@ -1,21 +1,25 @@
 #include "mqtt.h"
 #include "display.h"
+#include "mbed-trace/mbed_trace.h"
 #include "mbed.h"
+#include "platform.h"
 #include <MQTTClientMbedOs.h>
 #include <cstring>
-#include "mbed-trace/mbed_trace.h"
 //#include "wifi_helper.h"
 
 #define LEDON 0
 #define LEDOFF 1
-#define MQTT_BROKER "192.168.1.176"
 #define THING_NAME "ASR_Thang"
-#define LIGHT_LEVEL_TOPIC "ASR_Thang/light"
+#define LIGHT_SET_TOPIC "ASR_Thang/lightSet"
+#define LIGHT_LEVEL_TOPIC "ASR_Thang/lightLevel"
 #define ANNOUNCE_TOPIC "mytopic/announce"
-#define LIGHT_THRESH_TOPIC "ASR_Thang/lthresh"
+#define TEMP_SET_TOPIC "ASR_Thang/tempSet"
+#define TEMPERATURE_TOPIC "ASR_Thang/temp"
 #define MQTTClient_QOS2 1
 
 extern struct dataSet myData;
+uint32_t rxCount;
+mbed::DigitalOut rxLed(P8_0);
 
 #if MBED_CONF_APP_USE_TLS_SOCKET
 #include "root_ca_cert.h"
@@ -25,7 +29,30 @@ extern struct dataSet myData;
 #endif
 #endif // MBED_CONF_APP_USE_TLS_SOCKET
 
-class SocketDemo {
+void messageLightSetArrived(MQTT::MessageData &md) {
+  MQTT::Message &message = md.message;
+  uint32_t len = md.message.payloadlen;
+  char rxed[len + 1];
+
+  strncpy(&rxed[0], (char *)(&md.message.payload)[0], len);
+  myData.lightSet = atoi(rxed);
+  rxCount++;
+  rxLed = !rxLed;
+  myData.updateDisplay = true;
+}
+void messageTempSetArrived(MQTT::MessageData &md) {
+  MQTT::Message &message = md.message;
+  uint32_t len = md.message.payloadlen;
+  char rxed[len + 1];
+
+  strncpy(&rxed[0], (char *)(&md.message.payload)[0], len);
+  myData.tempSet = atoi(rxed);
+  rxCount++;
+  rxLed = !rxLed;
+  myData.updateDisplay = true;
+}
+
+class mqttTask {
   static constexpr size_t MAX_NUMBER_OF_ACCESS_POINTS = 10;
   static constexpr size_t MAX_MESSAGE_RECEIVED_LENGTH = 100;
 
@@ -36,9 +63,9 @@ class SocketDemo {
 #endif // MBED_CONF_APP_USE_TLS_SOCKET
 
 public:
-  SocketDemo() : _net(NetworkInterface::get_default_instance()) {}
+  mqttTask() : _net(NetworkInterface::get_default_instance()) {}
 
-  ~SocketDemo() {
+  ~mqttTask() {
     if (_net) {
       _net->disconnect();
     }
@@ -46,7 +73,7 @@ public:
 
   void run() {
     if (!_net) {
-      printf("\033[6;1HError! No network interface found.\r\n");
+      displayText("Error! No network interface found.", 1, 6);
       return;
     }
 
@@ -61,21 +88,26 @@ public:
 
     /* connect will perform the action appropriate to the interface type to
      * connect to the network */
+    char buffer[80];
 
-    printf("\033[1;1HConnecting to the network...\r\n");
+    displayText("Connected to wifi", 1, 1);
 
     nsapi_size_or_error_t result = _net->connect();
     if (result != 0) {
-      printf("\033[6;1HError! _net->connect() returned: %d\r\n", result);
+      sprintf(buffer, "Error! _net->connect() returned: %d\r\n", result);
+      displayText(buffer, 1, 6);
       return;
+    } else {
+      myData.wifiStatus = true;
     }
 
-    print_network_info();
+    // print_network_info();
 
     /* opening the socket only allocates resources */
     result = _socket.open(_net);
     if (result != 0) {
-      printf("\033[7;1HError! _socket.open() returned: %d\r\n", result);
+      sprintf(buffer, "Error! _socket.open() returned: %d\r\n", result);
+      displayText(buffer, 1, 7);
       return;
     }
 
@@ -101,72 +133,117 @@ public:
     /* we are connected to the network but since we're using a connection
      * oriented protocol we still need to open a connection on the socket */
 
-    printf("\033[9;1HOpening connection to remote port %d\r\n", REMOTE_PORT);
-
+    // printf("\033[9;1HOpening connection to remote port %d\r\n", REMOTE_PORT);
     result = _socket.connect(address);
     if (result != 0) {
-      printf("\033[10;1HError! _socket.connect() returned: %d\r\n", result);
+      sprintf(buffer, "Error! _socket.connect() returned: %d\r\n", result);
+      displayText(buffer, 1, 9);
       return;
     }
     MQTTClient client(&_socket);
-    char buffer[80];
-    uint32_t rc;
+
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
     data.clientID.cstring = (char *)THING_NAME;
     data.keepAliveInterval = 20;
     data.cleansession = 1;
     data.username.cstring = (char *)"";
     data.password.cstring = (char *)"";
-    rc = client.connect(data);
-    if (rc == 0) {
-        printf("\033[12;1HSuccesful connection of %s to Broker\n", data.clientID.cstring);
+    result = client.connect(data);
+    if (result == 0) {
+      sprintf(buffer, "Succesful connection of %s to broker",
+              data.clientID.cstring);
+      displayText(buffer, 1, 1);
+      myData.mqttStatus = true;
     } else {
-        printf("\033[12;1HClient connection failed");
+      displayText("Client connection failed", 1, 1);
+      return;
     }
     MQTT::Message message{};
-    sprintf(buffer, "Hello World! from %s\r\n", THING_NAME);
+    sprintf(buffer, "Hello World! from %s", THING_NAME);
     message.qos = MQTT::QOS0;
     message.retained = false;
     message.dup = false;
     message.payload = (void *)buffer;
     message.payloadlen = strlen(buffer) + 1;
 
-    rc = client.publish(ANNOUNCE_TOPIC, message);
-    if (rc == 0)
-      printf("\033[13;1Hpublish announce worked\n");
-    else {
-      printf("\033[13;1Hpublish announce failed %d\n", rc);
+    result = client.publish(ANNOUNCE_TOPIC, message);
+    if (result == 0) {
+      displayText("Publish Announce Success", 1, 11);
+    } else {
+      sprintf(buffer, "publish announce failed %d", result);
+      displayText(buffer, 1, 11);
     }
-    printf("\033[15;1HDemo concluded successfully \r\n");
-    while(1) {
-        client.yield(10);
-        rtos::ThisThread::sleep_for(1000ms);
-        rc = client.publish(ANNOUNCE_TOPIC, message);
-        if (rc == 0) {
-            printf("\033[13;1Hpublish announce worked\n");
-        }
-        else {
-            printf("\033[13;1Hpublish announce failed %d\n", rc);
-        }
+    result = client.subscribe((char *)LIGHT_SET_TOPIC, MQTT::QOS0,
+                              messageLightSetArrived);
+    if (result != 0)
+      sprintf(buffer, "Subscription Error %d", result);
+    else
+      sprintf(buffer, "Subscribed to %s", LIGHT_SET_TOPIC);
+    displayText(buffer, 1, 5);
+    result = client.subscribe((char *)TEMP_SET_TOPIC, MQTT::QOS0,
+                              messageTempSetArrived);
+    if (result != 0)
+      sprintf(buffer, "Subscription Error %d", result);
+    else
+      sprintf(buffer, "Subscribed to %s\n", TEMP_SET_TOPIC);
+    displayText(buffer, 1, 6);
 
+    int i = 0;
+    displayText("MQTT Looping", 1, 15);
+    myData.updateDisplay = true;
+    while (1) {
+      i++;
+      client.yield(10);
+      rtos::ThisThread::sleep_for(10ms);
+      if ((i & 0xff) == 0) {
+          sprintf(buffer, "%2.2f  ", myData.temperature);
+          message.payload = (void *)buffer;
+          message.payloadlen = strlen(buffer) + 1;
+          result = client.publish(TEMPERATURE_TOPIC, message);
+          if (result == 0) {
+            strcat(buffer, TEMPERATURE_TOPIC);
+            displayText(buffer, 1, 13);
+          } 
+          else {
+            sprintf(buffer, "publish temperature reading failed %d", result);
+            displayText(buffer, 1, 13);
+          }
+      }
+      if ((i & 0xff) == 0x80) {
+          sprintf(buffer, "%3.1f  ", myData.lightLevel);
+          message.payload = (void *)buffer;
+          message.payloadlen = strlen(buffer) + 1;
+          result = client.publish(LIGHT_LEVEL_TOPIC, message);
+          if (result == 0) {
+            strcat(buffer, LIGHT_LEVEL_TOPIC);
+            displayText(buffer, 1, 13);
+          } 
+          else {
+            sprintf(buffer, "publish light level failed %d", result);
+            displayText(buffer, 1, 13);
+          }
+      }
     }
   }
 
 private:
   bool resolve_hostname(SocketAddress &address) {
     const char hostname[] = MBED_CONF_APP_HOSTNAME;
+    char buffer[80];
 
     /* get the host address */
     printf("\033[6;1HResolve hostname %s\r\n", hostname);
     nsapi_size_or_error_t result = _net->gethostbyname(hostname, &address);
     if (result != 0) {
-      printf("\033[7;1HError! gethostbyname(%s) returned: %d\r\n", hostname,
-             result);
+      sprintf(buffer, "Error! gethostbyname(%s) returned: %d", hostname,
+              result);
+      displayText(buffer, 1, 7);
       return false;
     }
 
-    printf("\033[7;1H%s address is %s\r\n", hostname,
-           (address.get_ip_address() ? address.get_ip_address() : "None"));
+    sprintf(buffer, "\033[7;1H%s address is %s\r\n", hostname,
+            (address.get_ip_address() ? address.get_ip_address() : "None"));
+    displayText(buffer, 1, 7);
 
     return true;
   }
@@ -175,12 +252,14 @@ private:
     /* print the network info */
     SocketAddress a;
     _net->get_ip_address(&a);
-    printf("IP address: %s\r\n",
+    printf("\033[8;1HIP address: %s\r\n",
            a.get_ip_address() ? a.get_ip_address() : "None");
     _net->get_netmask(&a);
-    printf("Netmask: %s\r\n", a.get_ip_address() ? a.get_ip_address() : "None");
+    printf("\033[8;32HNetmask: %s\r\n",
+           a.get_ip_address() ? a.get_ip_address() : "None");
     _net->get_gateway(&a);
-    printf("Gateway: %s\r\n", a.get_ip_address() ? a.get_ip_address() : "None");
+    printf("\033[8:64HGateway: %s\r\n",
+           a.get_ip_address() ? a.get_ip_address() : "None");
   }
 
 private:
@@ -194,19 +273,15 @@ private:
 };
 
 void mqttThread() {
-  printf("\033\x63");
-  ThisThread::sleep_for(1s);
-  printf("\033(A");
-  ThisThread::sleep_for(100ms);
-  printf("\033[1;40HStarting socket demo\r\n\r\n");
 
 #ifdef MBED_CONF_MBED_TRACE_ENABLE
   mbed_trace_init();
 #endif
-
-  SocketDemo *example = new SocketDemo();
-  MBED_ASSERT(example);
-  example->run();
+  displayText("\033[2J", 1, 1);
+  mqttTask *mqttStart = new mqttTask();
+  MBED_ASSERT(mqttStart);
+  mqttStart->run();
+  displayText("MQTT Stopped", 1, 15);
 
   //    return 0;
 }

@@ -15,6 +15,8 @@
 #define HUMID_LOW_THRESH 21
 #define HUMID_HIGH_THRESH 22
 #define HUMID_SET_VALUE 23
+#define WIFI_STATUS 30
+#define MQTT_STATUS 31
 
 struct dataSet{
     float temperature;
@@ -25,10 +27,14 @@ struct dataSet{
     float lightSet = 40;
     float lightThresh = 5;
     bool lightStatus = false;
+    bool wifiStatus = false;
+    bool mqttStatus = false;
+    bool updateDisplay = true;
 };
 
 void displayThread();
 void displaySendUpdateSensor(int, float);
+void displayText(char*, int, int);
 
 
 #endif
