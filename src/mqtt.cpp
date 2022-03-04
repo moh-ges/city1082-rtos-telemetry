@@ -9,14 +9,15 @@
 
 #define LEDON 0
 #define LEDOFF 1
-#define THING_NAME "ASR_Thang"
-#define LIGHT_SET_TOPIC "ASR_Thang/lightSet"
-#define LIGHT_LEVEL_TOPIC "ASR_Thang/lightLevel"
-#define ANNOUNCE_TOPIC "mytopic/announce"
-#define TEMP_SET_TOPIC "ASR_Thang/tempSet"
-#define TEMPERATURE_TOPIC "ASR_Thang/temp"
+#define THING_NAME "ASR_Thang"  // change this to a unique IOT device name for the MQTT Broker
+#define LIGHT_SET_TOPIC "/lightSet"
+#define LIGHT_LEVEL_TOPIC "/lightLevel"
+#define ANNOUNCE_TOPIC "/announce"
+#define TEMP_SET_TOPIC "/tempSet"
+#define TEMPERATURE_TOPIC "/temp"
 #define MQTTClient_QOS2 1
 
+char topic[80]; //max size of a topic name/subname hierarchy
 extern struct dataSet myData;
 uint32_t rxCount;
 mbed::DigitalOut rxLed(P8_0);
@@ -165,27 +166,32 @@ public:
     message.dup = false;
     message.payload = (void *)buffer;
     message.payloadlen = strlen(buffer) + 1;
-
-    result = client.publish(ANNOUNCE_TOPIC, message);
+    strcpy(topic, THING_NAME);
+    strcat(topic, ANNOUNCE_TOPIC);
+    result = client.publish(topic, message);
     if (result == 0) {
       displayText("Publish Announce Success", 1, 11);
     } else {
       sprintf(buffer, "publish announce failed %d", result);
       displayText(buffer, 1, 11);
     }
-    result = client.subscribe((char *)LIGHT_SET_TOPIC, MQTT::QOS0,
+    strcpy(topic, THING_NAME);
+    strcat(topic, LIGHT_SET_TOPIC);
+    result = client.subscribe((char *)topic, MQTT::QOS0,
                               messageLightSetArrived);
     if (result != 0)
       sprintf(buffer, "Subscription Error %d", result);
     else
-      sprintf(buffer, "Subscribed to %s", LIGHT_SET_TOPIC);
+      sprintf(buffer, "Subscribed to %s", topic);
     displayText(buffer, 1, 5);
-    result = client.subscribe((char *)TEMP_SET_TOPIC, MQTT::QOS0,
+    strcpy(topic, THING_NAME);
+    strcat(topic, TEMP_SET_TOPIC);
+    result = client.subscribe((char *)topic, MQTT::QOS0,
                               messageTempSetArrived);
     if (result != 0)
       sprintf(buffer, "Subscription Error %d", result);
     else
-      sprintf(buffer, "Subscribed to %s\n", TEMP_SET_TOPIC);
+      sprintf(buffer, "Subscribed to %s", topic);
     displayText(buffer, 1, 6);
 
     int i = 0;
@@ -199,9 +205,12 @@ public:
           sprintf(buffer, "%2.2f  ", myData.temperature);
           message.payload = (void *)buffer;
           message.payloadlen = strlen(buffer) + 1;
-          result = client.publish(TEMPERATURE_TOPIC, message);
+          strcpy(topic, THING_NAME);
+          strcat(topic, TEMPERATURE_TOPIC);
+
+          result = client.publish(topic, message);
           if (result == 0) {
-            strcat(buffer, TEMPERATURE_TOPIC);
+            strcat(buffer, topic);
             strcat(buffer, "\033[K");
             displayText(buffer, 1, 13);
           } 
@@ -214,9 +223,12 @@ public:
           sprintf(buffer, "%3.1f  ", myData.lightLevel);
           message.payload = (void *)buffer;
           message.payloadlen = strlen(buffer) + 1;
-          result = client.publish(LIGHT_LEVEL_TOPIC, message);
+          strcpy(topic, THING_NAME);
+          strcat(topic, LIGHT_LEVEL_TOPIC);
+
+          result = client.publish(topic, message);
           if (result == 0) {
-            strcat(buffer, LIGHT_LEVEL_TOPIC);
+            strcat(buffer, topic);
             strcat(buffer, "\033[K");
             displayText(buffer, 1, 13);
           } 
