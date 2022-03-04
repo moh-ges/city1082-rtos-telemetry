@@ -11,9 +11,11 @@
 #define LEDOFF 1
 #define THING_NAME "ASR_Thang"  // change this to a unique IOT device name for the MQTT Broker
 #define LIGHT_SET_TOPIC "/lightSet"
+#define LIGHT_LEVEL_SET_TOPIC "ASR_Thang/lightSet"
 #define LIGHT_LEVEL_TOPIC "/lightLevel"
-#define ANNOUNCE_TOPIC "/announce"
+#define ANNOUNCE_TOPIC "announce"
 #define TEMP_SET_TOPIC "/tempSet"
+#define TEMPERATURE_SET_TOPIC "ASR_Thang/tempSet"
 #define TEMPERATURE_TOPIC "/temp"
 #define MQTTClient_QOS2 1
 
@@ -166,8 +168,8 @@ public:
     message.dup = false;
     message.payload = (void *)buffer;
     message.payloadlen = strlen(buffer) + 1;
-    strcpy(topic, THING_NAME);
-    strcat(topic, ANNOUNCE_TOPIC);
+//    strcpy(topic, THING_NAME);
+    strcpy(topic, ANNOUNCE_TOPIC);
     result = client.publish(topic, message);
     if (result == 0) {
       displayText("Publish Announce Success", 1, 11);
@@ -176,8 +178,8 @@ public:
       displayText(buffer, 1, 11);
     }
     strcpy(topic, THING_NAME);
-    strcat(topic, LIGHT_SET_TOPIC);
-    result = client.subscribe((char *)topic, MQTT::QOS0,
+    strcat(topic, LIGHT_SET_TOPIC); // this method fails to set up Callback correctly
+    result = client.subscribe(LIGHT_LEVEL_SET_TOPIC, MQTT::QOS0,
                               messageLightSetArrived);
     if (result != 0)
       sprintf(buffer, "Subscription Error %d", result);
@@ -185,8 +187,8 @@ public:
       sprintf(buffer, "Subscribed to %s", topic);
     displayText(buffer, 1, 5);
     strcpy(topic, THING_NAME);
-    strcat(topic, TEMP_SET_TOPIC);
-    result = client.subscribe((char *)topic, MQTT::QOS0,
+    strcat(topic, TEMP_SET_TOPIC); // this method fails to set up Callback correctly
+    result = client.subscribe(TEMPERATURE_SET_TOPIC, MQTT::QOS0,
                               messageTempSetArrived);
     if (result != 0)
       sprintf(buffer, "Subscription Error %d", result);
