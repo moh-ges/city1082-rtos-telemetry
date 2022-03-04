@@ -2,7 +2,7 @@
     "config": {
         "hostname": {
             "help": "The demo will try to connect to this MQTT broker address on port 1883).",
-            "value": "\"192.168.1.176\""
+            "value": "\"192.168.1.174\""
         },
         "use-tls-socket": {
             "value": false

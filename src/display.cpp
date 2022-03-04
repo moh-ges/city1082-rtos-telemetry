@@ -10,7 +10,6 @@
 #include "display.h"
 #include "vt100.h"
 
-void updateDisplay();
 typedef struct {
     int     type;           /* The type of data 0 = Temperature   */
                             /*                 10 = Light Level   */
@@ -26,9 +25,9 @@ typedef struct {
 
 extern struct dataSet myData;
 static MemoryPool<message_t, 32> mpool;
-static MemoryPool<txt_t, 10> tpool;
+static MemoryPool<txt_t, 20> tpool;
 static Queue<message_t, 32> queue;
-static Queue<txt_t, 10> tqueue;
+static Queue<txt_t, 20> tqueue;
 bool displayUp = false;
 
 void displaySendUpdateSensor(int topic, float reading) {
@@ -42,7 +41,7 @@ void displaySendUpdateSensor(int topic, float reading) {
 void displayText(char * text, int xPos, int yPos) {
     txt_t *txtMsg = tpool.try_alloc();
     if(txtMsg) {
-        strncpy(txtMsg->txt, text, strlen(text));
+        strcpy(txtMsg->txt, text);
         txtMsg->x = xPos;
         txtMsg->y = yPos;
         tqueue.try_put(txtMsg);
@@ -51,20 +50,21 @@ void displayText(char * text, int xPos, int yPos) {
 
 void displayThread(void)
 {
-    while(!myData.wifiStatus){
-        ThisThread::sleep_for(10ms);
-    }
     cout << "\033c" ;  // Reset terminal
     ThisThread::sleep_for(500ms);
     cout << "\033)A";  // Select UK Character Set
-    ThisThread::sleep_for(100ms);
+    ThisThread::sleep_for(10ms);
 //    cout << "\033(0";  // Select Graphics set 0
 //    ThisThread::sleep_for(10ms);
     cout << "\033[?25l" ;  // Hide Cursor
-    ThisThread::sleep_for(100ms);
-
+//    ThisThread::sleep_for(100ms);
+    while(!myData.wifiStatus){
+        ThisThread::sleep_for(10ms);
+    }
+    cout << "\033[2J" ;
+    rtos::ThisThread::sleep_for(100ms);
+    displayUp = true;
     while (true) {
-        if (myData.updateDisplay) updateDisplay();
         message_t *message;
         auto event = queue.try_get(&message);
         ThisThread::sleep_for(1ms);
@@ -109,21 +109,4 @@ void displayThread(void)
  
         }
     }
-}
-void updateDisplay() {
-    std::cout << "\033[2;1H"   // Cursor to 1, 1 (0, 0) HOME
-         << "\033[1;37m"
-         << "Temperature:         C   Set Temp:         C   Heater Status:      \r\n"
-         << "Light Level:         \%   Set Light:        \%   Light Status:       \r\n";
-    ThisThread::sleep_for(100ms);
-    displaySendUpdateSensor(TEMP_SET_VALUE, myData.tempSet);
-    ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(HEATER_STATUS, myData.heaterStatus);
-    ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(LIGHT_SET_VALUE, myData.lightSet);
-    ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(LIGHT_STATUS, myData.lightStatus);
-    ThisThread::sleep_for(10ms);
-    myData.updateDisplay = false;
-    displayUp = true;
 }

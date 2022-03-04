@@ -153,7 +153,7 @@ public:
       sprintf(buffer, "Succesful connection of %s to broker",
               data.clientID.cstring);
       displayText(buffer, 1, 1);
-      myData.mqttStatus = true;
+//      myData.mqttStatus = true;
     } else {
       displayText("Client connection failed", 1, 1);
       return;
@@ -195,13 +195,14 @@ public:
       i++;
       client.yield(10);
       rtos::ThisThread::sleep_for(10ms);
-      if ((i & 0xff) == 0) {
+      if ((i & 0x7ff) == 0) {
           sprintf(buffer, "%2.2f  ", myData.temperature);
           message.payload = (void *)buffer;
           message.payloadlen = strlen(buffer) + 1;
           result = client.publish(TEMPERATURE_TOPIC, message);
           if (result == 0) {
             strcat(buffer, TEMPERATURE_TOPIC);
+            strcat(buffer, "\033[K");
             displayText(buffer, 1, 13);
           } 
           else {
@@ -209,13 +210,14 @@ public:
             displayText(buffer, 1, 13);
           }
       }
-      if ((i & 0xff) == 0x80) {
+      if ((i & 0x7ff) == 0x200) {
           sprintf(buffer, "%3.1f  ", myData.lightLevel);
           message.payload = (void *)buffer;
           message.payloadlen = strlen(buffer) + 1;
           result = client.publish(LIGHT_LEVEL_TOPIC, message);
           if (result == 0) {
             strcat(buffer, LIGHT_LEVEL_TOPIC);
+            strcat(buffer, "\033[K");
             displayText(buffer, 1, 13);
           } 
           else {
@@ -277,7 +279,6 @@ void mqttThread() {
 #ifdef MBED_CONF_MBED_TRACE_ENABLE
   mbed_trace_init();
 #endif
-  displayText("\033[2J", 1, 1);
   mqttTask *mqttStart = new mqttTask();
   MBED_ASSERT(mqttStart);
   mqttStart->run();

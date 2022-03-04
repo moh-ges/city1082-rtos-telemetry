@@ -1,7 +1,12 @@
 #include "mbed.h"
 #include "display.h"
+#include <ios>
+#include <iostream>
+#include "string.h"
+#include <iomanip>
 #include <cmath>
 
+void updateDisplay();
 //#define THERM_GND P10_3
 //#define THERM_VCC P10_0
 #define THERM_OUT P10_1
@@ -49,17 +54,12 @@ void sendThread(void)
         {
             ThisThread::sleep_for(10ms);
         }
-    displaySendUpdateSensor(TEMP_SET_VALUE, myData.tempSet);
-            ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(HEATER_STATUS, myData.heaterStatus);
-            ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(LIGHT_SET_VALUE, myData.lightSet);
-            ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(LIGHT_STATUS, myData.lightStatus);
-            ThisThread::sleep_for(10ms);
+    updateDisplay();
+
     while (true) {
     //    i++; // fake data update
         //float temperature;
+        if (myData.updateDisplay) updateDisplay();
 
         myData.temperature = readTemp();
        
@@ -90,4 +90,32 @@ float readTemp()
 float readLight()
 {
     return (lightLevel.read())*100.0f;
+}
+void updateDisplay() {
+    cout << "\033[1;37m";
+    ThisThread::sleep_for(100ms);
+    displayText( "Temperature:", 1, 2);
+    displayText( "C", 22, 2);
+    displayText( "Set Temp", 26, 2);
+    displayText( "C", 44, 2);
+    displayText( "Heater Status:", 48, 2);
+    displayText( "Light Level:", 1, 3);
+    displayText( "%", 22, 3);
+    displayText( "Set Light", 26, 3);
+    displayText( "%", 44, 3);
+    displayText( "Light Status:", 48, 3);
+//    displayText( "Temperature:         C   Set Temp:         C   Heater Status:      ", 1, 2);
+//    ThisThread::sleep_for(10ms);
+//    displayText( "Light Level:         %   Set Light:        %   Light Status:       ", 1, 3);
+    ThisThread::sleep_for(100ms);
+    displaySendUpdateSensor(TEMP_SET_VALUE, myData.tempSet);
+    ThisThread::sleep_for(10ms);
+    displaySendUpdateSensor(HEATER_STATUS, myData.heaterStatus);
+    ThisThread::sleep_for(10ms);
+    displaySendUpdateSensor(LIGHT_SET_VALUE, myData.lightSet);
+    ThisThread::sleep_for(10ms);
+    displaySendUpdateSensor(LIGHT_STATUS, myData.lightStatus);
+    ThisThread::sleep_for(10ms);
+    myData.updateDisplay = false;
+    displayUp = true;
 }
