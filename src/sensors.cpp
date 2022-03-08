@@ -44,7 +44,7 @@ void sendThread(void)
         {
             ThisThread::sleep_for(10ms);
         }
-    ThisThread::sleep_for(2s);
+//    ThisThread::sleep_for(2s);
     while (true) {
         if (myData.updateDisplay) updateDisplay();
 

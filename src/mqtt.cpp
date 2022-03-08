@@ -21,6 +21,7 @@ uint32_t rxCount = 0;
 uint32_t pubFailCount = 0;
 
 mbed::DigitalOut rxLed(P8_0);
+mbed::DigitalOut debugLed(P9_1);
 
 #if MBED_CONF_APP_USE_TLS_SOCKET
 #include "root_ca_cert.h"
@@ -242,14 +243,15 @@ public:
 
     int i = 0;
     displayText("MQTT Looping", 1, 15);
-
+    debugLed = true;
  //   myData.updateDisplay = true;
     while (1) {
       i++;
+      debugLed = !debugLed;
       client.yield(10);
       rtos::ThisThread::sleep_for(10ms);
       if ((i & 0x7ff) == 0) {
-          sprintf(buffer, "%2.2f  ", myData.temperature);
+          sprintf(buffer, "%2.1f  ", myData.temperature);
           message.payload = (void *)buffer;
           message.payloadlen = strlen(buffer) + 1;
           strcpy(topic, THING_NAME);
