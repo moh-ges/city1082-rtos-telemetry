@@ -4,24 +4,22 @@
 #include "mbed.h"
 #include "platform.h"
 #include <MQTTClientMbedOs.h>
+#include  <iostream>
+#include <string>
 #include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include "config.h"
 //#include "wifi_helper.h"
 
-#define LEDON 0
-#define LEDOFF 1
-#define THING_NAME "ASR_Thang"  // change this to a unique IOT device name for the MQTT Broker
-#define LIGHT_SET_TOPIC "/lightSet"
-#define LIGHT_LEVEL_SET_TOPIC "ASR_Thang/lightSet"
-#define LIGHT_LEVEL_TOPIC "/lightLevel"
-#define ANNOUNCE_TOPIC "announce"
-#define TEMP_SET_TOPIC "/tempSet"
-#define TEMPERATURE_SET_TOPIC "ASR_Thang/tempSet"
-#define TEMPERATURE_TOPIC "/temp"
-#define MQTTClient_QOS2 1
+
 
 char topic[80]; //max size of a topic name/subname hierarchy
 extern struct dataSet myData;
-uint32_t rxCount;
+extern bool displayUp;
+uint32_t rxCount = 0;
+uint32_t pubFailCount = 0;
+
 mbed::DigitalOut rxLed(P8_0);
 
 #if MBED_CONF_APP_USE_TLS_SOCKET
@@ -53,6 +51,21 @@ void messageTempSetArrived(MQTT::MessageData &md) {
   rxCount++;
   rxLed = !rxLed;
   myData.updateDisplay = true;
+}
+void messageTimeArrived(MQTT::MessageData &md) {
+  MQTT::Message &message = md.message;
+  uint32_t len = md.message.payloadlen - 3;
+  char rxed[len];
+  strncpy(&rxed[0], (char *)(&md.message.payload)[0], len);
+  time_t timeRx = rxed[0]-48; // = atoll(rxed);
+  for (int i=1; i < len; i++) {
+      int digit =  rxed[i]-48;
+      timeRx = (timeRx * 0x0a) + digit;
+  }
+  set_time(timeRx);  // timestamp is a long integer
+ 
+  rxCount++;
+  rxLed = !rxLed;
 }
 
 class mqttTask {
@@ -93,8 +106,6 @@ public:
      * connect to the network */
     char buffer[80];
 
-    displayText("Connected to wifi", 1, 1);
-
     nsapi_size_or_error_t result = _net->connect();
     if (result != 0) {
       sprintf(buffer, "Error! _net->connect() returned: %d\r\n", result);
@@ -102,8 +113,15 @@ public:
       return;
     } else {
       myData.wifiStatus = true;
-    }
 
+    }
+    initDisplay();
+    //displayText("Connected to wifi", 1, 1);
+
+    while(displayUp == false) {
+
+        ThisThread::sleep_for(10);
+    }
     // print_network_info();
 
     /* opening the socket only allocates resources */
@@ -153,8 +171,9 @@ public:
     data.password.cstring = (char *)"";
     result = client.connect(data);
     if (result == 0) {
-      sprintf(buffer, "Succesful connection of %s to broker",
-              data.clientID.cstring);
+      sprintf(buffer, "Succesful connection of %s to broker %s",
+              data.clientID.cstring,
+              MBED_CONF_APP_HOSTNAME);
       displayText(buffer, 1, 1);
 //      myData.mqttStatus = true;
     } else {
@@ -176,6 +195,9 @@ public:
     } else {
       sprintf(buffer, "publish announce failed %d", result);
       displayText(buffer, 1, 11);
+      sprintf(buffer, "Pub Fail: %d", pubFailCount++);
+      displayText(buffer, 60, 11);
+      return;
     }
     strcpy(topic, THING_NAME);
     strcat(topic, LIGHT_SET_TOPIC); // this method fails to set up Callback correctly
@@ -195,10 +217,33 @@ public:
     else
       sprintf(buffer, "Subscribed to %s", topic);
     displayText(buffer, 1, 6);
+    strcpy(topic, TIME_TOPIC);  // this method fails to set up Callback correctly
+    result = client.subscribe(TIME_TOPIC, MQTT::QOS0,
+                              messageTimeArrived);
+    if (result != 0)
+      sprintf(buffer, "Subscription Error %d", result);
+    else
+      sprintf(buffer, "Subscribed to %s", topic);
+    displayText(buffer, 1, 6);
+   message.payload = (void *)buffer;
+    message.payloadlen = strlen(buffer) + 1;
+//    strcpy(topic, THING_NAME);
+    strcpy(topic, GET_TIME_TOPIC);
+    result = client.publish(topic, message);
+    if (result == 0) {
+      displayText("Publish Trigger Time Stamp Success", 1, 10);
+    } else {
+      sprintf(buffer, "publish Trigger Time Stamp failed %d", result);
+      displayText(buffer, 1, 10);
+      sprintf(buffer, "Pub Fail: %d", pubFailCount++);
+      displayText(buffer, 60, 11);
+      return;
+    }
 
     int i = 0;
     displayText("MQTT Looping", 1, 15);
-    myData.updateDisplay = true;
+
+ //   myData.updateDisplay = true;
     while (1) {
       i++;
       client.yield(10);
@@ -214,11 +259,15 @@ public:
           if (result == 0) {
             strcat(buffer, topic);
             strcat(buffer, "\033[K");
-            displayText(buffer, 1, 13);
+            displayText(buffer, 1, 12);
           } 
           else {
             sprintf(buffer, "publish temperature reading failed %d", result);
-            displayText(buffer, 1, 13);
+            displayText(buffer, 1, 12);
+            sprintf(buffer, "Pub Fail: %d", pubFailCount++);
+            displayText(buffer, 60, 11);
+            return;
+
           }
       }
       if ((i & 0x7ff) == 0x200) {
@@ -237,6 +286,9 @@ public:
           else {
             sprintf(buffer, "publish light level failed %d", result);
             displayText(buffer, 1, 13);
+            sprintf(buffer, "Pub Fail: %d", pubFailCount++);
+            displayText(buffer, 60, 11);
+            return;
           }
       }
     }
@@ -248,7 +300,7 @@ private:
     char buffer[80];
 
     /* get the host address */
-    printf("\033[6;1HResolve hostname %s\r\n", hostname);
+    //printf("\033[6;1HResolve hostname %s\r\n", hostname);
     nsapi_size_or_error_t result = _net->gethostbyname(hostname, &address);
     if (result != 0) {
       sprintf(buffer, "Error! gethostbyname(%s) returned: %d", hostname,
@@ -257,9 +309,9 @@ private:
       return false;
     }
 
-    sprintf(buffer, "\033[7;1H%s address is %s\r\n", hostname,
-            (address.get_ip_address() ? address.get_ip_address() : "None"));
-    displayText(buffer, 1, 7);
+//    sprintf(buffer, "\033[7;1H%s address is %s\r\n", hostname,
+//            (address.get_ip_address() ? address.get_ip_address() : "None"));
+//    displayText(buffer, 1, 7);
 
     return true;
   }
@@ -295,7 +347,9 @@ void mqttThread() {
 #endif
   mqttTask *mqttStart = new mqttTask();
   MBED_ASSERT(mqttStart);
-  mqttStart->run();
+  while(pubFailCount < 20) {
+    mqttStart->run();
+  }
   displayText("MQTT Stopped", 1, 15);
 
   //    return 0;

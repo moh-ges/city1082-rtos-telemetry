@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <cmath>
 
-void updateDisplay();
 //#define THERM_GND P10_3
 //#define THERM_VCC P10_0
 #define THERM_OUT P10_1
@@ -39,35 +38,24 @@ float readLight();
 
 void sendThread(void)
 {
-    // this is for reading the thermistor
-    // DigitalOut ground(THERM_GND); // Now permanent connection to power
-    // DigitalOut vcc(THERM_VCC);    // so redundant.
-    // initialise the thermistor power
-    // vcc= false;
-    // ground = true;
 
-    //float    temp;  // AD result of measured voltage 
-    //float    lightLev;   // AD result of measured current
-    //int      cycles;       // A counter value               
-    // uint32_t i = 0;
+    char buffer[80];
     while (displayUp == false)
         {
             ThisThread::sleep_for(10ms);
         }
-    updateDisplay();
-
+    ThisThread::sleep_for(2s);
     while (true) {
-    //    i++; // fake data update
-        //float temperature;
         if (myData.updateDisplay) updateDisplay();
 
         myData.temperature = readTemp();
        
         myData.lightLevel =  readLight();
 
-    //    cycles = i;
-        displaySendUpdateSensor(TEMP, myData.temperature);
-        displaySendUpdateSensor(LIGHT, myData.lightLevel);
+        sprintf(buffer, "%2.1f", myData.temperature);
+        displayText(buffer, 15, 2);
+        sprintf(buffer, "%2.1f", myData.lightLevel);
+        displayText(buffer, 15, 3);
         ThisThread::sleep_for(100ms);
         
     }
@@ -90,32 +78,4 @@ float readTemp()
 float readLight()
 {
     return (lightLevel.read())*100.0f;
-}
-void updateDisplay() {
-    cout << "\033[1;37m";
-    ThisThread::sleep_for(100ms);
-    displayText( "Temperature:", 1, 2);
-    displayText( "C", 22, 2);
-    displayText( "Set Temp", 26, 2);
-    displayText( "C", 44, 2);
-    displayText( "Heater Status:", 48, 2);
-    displayText( "Light Level:", 1, 3);
-    displayText( "%", 22, 3);
-    displayText( "Set Light", 26, 3);
-    displayText( "%", 44, 3);
-    displayText( "Light Status:", 48, 3);
-//    displayText( "Temperature:         C   Set Temp:         C   Heater Status:      ", 1, 2);
-//    ThisThread::sleep_for(10ms);
-//    displayText( "Light Level:         %   Set Light:        %   Light Status:       ", 1, 3);
-    ThisThread::sleep_for(100ms);
-    displaySendUpdateSensor(TEMP_SET_VALUE, myData.tempSet);
-    ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(HEATER_STATUS, myData.heaterStatus);
-    ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(LIGHT_SET_VALUE, myData.lightSet);
-    ThisThread::sleep_for(10ms);
-    displaySendUpdateSensor(LIGHT_STATUS, myData.lightStatus);
-    ThisThread::sleep_for(10ms);
-    myData.updateDisplay = false;
-    displayUp = true;
 }

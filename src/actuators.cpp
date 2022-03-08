@@ -3,10 +3,15 @@
 #include "actuators.h"
 
 extern struct dataSet myData;
+extern bool displayUp;
 
 void actuatorsThread() {
+    char buffer[80];
     DigitalOut lightIndicator(P12_3);
     DigitalOut heatIndicator(P0_5);
+    while (displayUp == false) {
+        ThisThread::sleep_for(10ms);
+    }
     while(true){
         if (myData.lightLevel < myData.lightSet - myData.lightThresh) {
             lightIndicator = true;
@@ -22,15 +27,16 @@ void actuatorsThread() {
         }
         if (myData.lightStatus != lightIndicator) {
             myData.lightStatus = lightIndicator;
-            displaySendUpdateSensor(LIGHT_STATUS, lightIndicator);
+            sprintf(buffer, "%s", lightIndicator?
+                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
+            displayText(buffer, 63, 3);
         }
         if (myData.heaterStatus != heatIndicator) {
             myData.heaterStatus = heatIndicator;
-            displaySendUpdateSensor(HEATER_STATUS, heatIndicator);
+            sprintf(buffer, "%s", heatIndicator?
+                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
+            displayText(buffer, 63, 2);
         }
-
-
         ThisThread::sleep_for(100ms);
     }
-
 }

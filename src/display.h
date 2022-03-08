@@ -29,12 +29,13 @@ struct dataSet{
     bool lightStatus = false;
     bool wifiStatus = false;
     bool mqttStatus = false;
-    bool updateDisplay = true;
+    bool updateDisplay = false;
 };
 
 void displayThread();
-void displaySendUpdateSensor(int, float);
 void displayText(char*, int, int);
+void initDisplay(void);
+void updateDisplay(void);
 
 
 #endif

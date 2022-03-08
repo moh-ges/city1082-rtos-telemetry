@@ -10,6 +10,7 @@
 #include "display.h"
 #include "vt100.h"
 
+#define CLEAR "CLS"
 typedef struct {
     int     type;           /* The type of data 0 = Temperature   */
                             /*                 10 = Light Level   */
@@ -24,20 +25,10 @@ typedef struct {
 }txt_t;
 
 extern struct dataSet myData;
-static MemoryPool<message_t, 32> mpool;
-static MemoryPool<txt_t, 20> tpool;
-static Queue<message_t, 32> queue;
-static Queue<txt_t, 20> tqueue;
+static MemoryPool<txt_t, 32> tpool;
+static Queue<txt_t, 32> tqueue;
 bool displayUp = false;
 
-void displaySendUpdateSensor(int topic, float reading) {
-    message_t *message = mpool.try_alloc();
-    if(message) {
-        message->type =  topic;
-        message->value = reading;
-        queue.try_put(message);
-    }
-}
 void displayText(char * text, int xPos, int yPos) {
     txt_t *txtMsg = tpool.try_alloc();
     if(txtMsg) {
@@ -51,62 +42,58 @@ void displayText(char * text, int xPos, int yPos) {
 void displayThread(void)
 {
     cout << "\033c" ;  // Reset terminal
-    ThisThread::sleep_for(500ms);
+    ThisThread::sleep_for(200ms);
     cout << "\033)A";  // Select UK Character Set
     ThisThread::sleep_for(10ms);
-//    cout << "\033(0";  // Select Graphics set 0
-//    ThisThread::sleep_for(10ms);
     cout << "\033[?25l" ;  // Hide Cursor
-//    ThisThread::sleep_for(100ms);
-    while(!myData.wifiStatus){
-        ThisThread::sleep_for(10ms);
-    }
-    cout << "\033[2J" ;
-    rtos::ThisThread::sleep_for(100ms);
-    displayUp = true;
     while (true) {
-        message_t *message;
-        auto event = queue.try_get(&message);
-        ThisThread::sleep_for(1ms);
-        if (event) {
-          switch(message->type) {
-                case TEMP:
-                    std::cout << "\033[2;15H" << std::fixed << std::setw(6)
-                        << std::setprecision(1) << (message->value);
-                    break;
-                case TEMP_SET_VALUE:
-                    std::cout << "\033[2;37H" << std::fixed << std::setw(6)
-                        << std::setprecision(1) << (message->value);
-                    break;
-                case HEATER_STATUS:
-                    std::cout << "\033[2;63H" << (static_cast<bool>(message->value)?
-                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
-                    break;
-                case LIGHT:
-                    std::cout << "\033[3;15H" << std::fixed << std::setw(6)
-                    << std::setprecision(1) << (message->value);
-                    break;
-                case LIGHT_SET_VALUE:
-                    std::cout << "\033[3;37H" << std::fixed << std::setw(6)
-                    << std::setprecision(1) << (message->value);
-                    break;
-                case LIGHT_STATUS:
-                    std::cout << "\033[3;63H" << (static_cast<bool>(message->value)?
-                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
-                    break;
-                default:
-                    break;
-            }
-            mpool.free(message);
-        }
         txt_t *txtMsg;
         auto tevent = tqueue.try_get(&txtMsg);
         ThisThread::sleep_for(1ms);
         if (tevent) {
-            std::cout << "\033[" << txtMsg->y << ";" << txtMsg->x << "H" << txtMsg->txt;
+            if ((txtMsg->txt[0] == 'C')&&
+                (txtMsg->txt[1] == 'L')&&
+                (txtMsg->txt[2] == 'S')) 
+            {
+                printf("\033[2J");
+            } 
+            else {
+                std::cout << "\033[" << txtMsg->y << ";" << txtMsg->x << "H" << txtMsg->txt;
+            }
+            
         
             tpool.free(txtMsg);
  
         }
     }
+}
+void initDisplay() {
+    displayText( CLEAR, 1, 1); // clear Screen
+    updateDisplay(); // initialise readings/status display
+    displayUp = true;
+}
+void updateDisplay() {
+    char buffer[80];
+    displayText( "\033[1:37mTemperature:\033[K", 1, 2);
+    displayText( "C", 21, 2);
+    displayText( "Set Temp", 26, 2);
+    displayText( "C", 43, 2);
+    displayText( "Heater Status:", 48, 2);
+    displayText( "Light Level:\033[K", 1, 3);
+    displayText( "%", 21, 3);
+    displayText( "Set Light", 26, 3);
+    displayText( "%", 43, 3);
+    displayText( "Light Status:\033[?25l", 48, 3);
+    sprintf(buffer, "%2.1f", myData.tempSet);
+    displayText(buffer, 37, 2);
+    sprintf(buffer, "%s", myData.heaterStatus?
+                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
+    displayText(buffer, 63, 2);
+    sprintf(buffer, "%2.1f", myData.lightSet);
+    displayText(buffer, 37, 3);
+    sprintf(buffer, "%s", myData.lightStatus?
+                    "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
+    displayText(buffer, 63, 3);
+
+    myData.updateDisplay = false;
 }
