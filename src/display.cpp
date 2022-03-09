@@ -74,7 +74,7 @@ void initDisplay() {
 }
 void updateDisplay() {
     char buffer[80];
-    displayText( "\033[0:33mTemperature:\033[K", 1, 2);
+    displayText( "\033[0;33mTemperature:\033[K", 1, 2);
     displayText( "C", 21, 2);
     displayText( "Set Temp", 26, 2);
     displayText( "C", 43, 2);
@@ -84,12 +84,12 @@ void updateDisplay() {
     displayText( "Set Light", 26, 3);
     displayText( "%", 43, 3);
     displayText( "Light Status:\033[?25l", 48, 3);
-    sprintf(buffer, "\033[1:33m%2.1f", myData.tempSet);
+    sprintf(buffer, "\033[1;33m%2.1f", myData.tempSet);
     displayText(buffer, 37, 2);
     sprintf(buffer, "%s", myData.heaterStatus?
                     "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");
     displayText(buffer, 63, 2);
-    sprintf(buffer, "\033[1:33m%2.1f", myData.lightSet);
+    sprintf(buffer, "\033[1;33m%2.1f", myData.lightSet);
     displayText(buffer, 37, 3);
     sprintf(buffer, "%s", myData.lightStatus?
                     "\033[1;31mON  \033[1;37m":"\033[1;32mOFF\033[1;37m");

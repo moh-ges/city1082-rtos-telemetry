@@ -215,7 +215,7 @@ public:
       sprintf(buffer, "Subscription Error %d", result);
     else
       sprintf(buffer, "Subscribed to %s", topic);
-    displayText(buffer, 1, 6);
+    displayText(buffer, 40, 5);
     strcpy(topic, TIME_TOPIC);  // this method fails to set up Callback correctly
     result = client.subscribe(TIME_TOPIC, MQTT::QOS0,
                               messageTimeArrived);
