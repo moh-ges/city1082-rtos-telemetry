@@ -12,8 +12,6 @@
 #include "config.h"
 //#include "wifi_helper.h"
 
-
-
 char topic[80]; //max size of a topic name/subname hierarchy
 extern struct dataSet myData;
 extern bool displayUp;
