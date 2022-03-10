@@ -84,6 +84,8 @@ void updateDisplay() {
     displayText( "Set Light", 26, 3);
     displayText( "%", 43, 3);
     displayText( "Light Status:\033[?25l", 48, 3);
+    displayText( "Sub Count:", 44, 12);
+    displayText( "Pub Count:", 44, 13);
     sprintf(buffer, "\033[1;33m%2.1f", myData.tempSet);
     displayText(buffer, 37, 2);
     sprintf(buffer, "%s", myData.heaterStatus?

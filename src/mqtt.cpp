@@ -105,6 +105,8 @@ public:
      * connect to the network */
     char buffer[80];
     uint32_t pubCount = 0;
+    uint32_t lastPC = 0;  // previous loop value of pubCount
+    uint32_t lastRC = 0;  // previous loop value of rxCount
 
     nsapi_size_or_error_t result = _net->connect();
     if (result != 0) {
@@ -261,11 +263,9 @@ public:
           result = client.publish(topic, message);
           if (result == 0) {
             strcat(buffer, topic);
-            strcat(buffer, "\033[K");
+            strcat(buffer, "       ");
             displayText(buffer, 1, 12);
             pubCount++;
-            sprintf(buffer, "Pub Count = %d", pubCount);
-            displayText(buffer, 43, 13);
           } 
           else {
             sprintf(buffer, "publish temperature reading failed %d", result);
@@ -286,11 +286,9 @@ public:
           result = client.publish(topic, message);
           if (result == 0) {
             strcat(buffer, topic);
-            strcat(buffer, "\033[K");
+            strcat(buffer, "      ");
             displayText(buffer, 1, 13);
             pubCount++;
-            sprintf(buffer, "Pub Count = %d", pubCount);
-            displayText(buffer, 43, 13);
           } 
           else {
             sprintf(buffer, "publish light level failed %d", result);
@@ -299,6 +297,16 @@ public:
             displayText(buffer, 60, 11);
             return;
           }
+      }
+      if (pubCount > lastPC) {
+            sprintf(buffer, "%5d", pubCount);
+            displayText(buffer, 56, 13);
+            lastPC = pubCount;
+      }
+      if (rxCount > lastRC) {
+            sprintf(buffer, "%5d", rxCount);
+            displayText(buffer, 56, 12);
+            lastRC = rxCount;
       }
     }
   }
