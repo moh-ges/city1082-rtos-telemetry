@@ -104,6 +104,7 @@ public:
     /* connect will perform the action appropriate to the interface type to
      * connect to the network */
     char buffer[80];
+    uint32_t pubCount = 0;
 
     nsapi_size_or_error_t result = _net->connect();
     if (result != 0) {
@@ -191,6 +192,7 @@ public:
     result = client.publish(topic, message);
     if (result == 0) {
       displayText("Publish Announce Success", 1, 11);
+      pubCount++;
     } else {
       sprintf(buffer, "publish announce failed %d", result);
       displayText(buffer, 1, 11);
@@ -215,7 +217,7 @@ public:
       sprintf(buffer, "Subscription Error %d", result);
     else
       sprintf(buffer, "Subscribed to %s", topic);
-    displayText(buffer, 1, 6);
+    displayText(buffer, 40, 5);
     strcpy(topic, TIME_TOPIC);  // this method fails to set up Callback correctly
     result = client.subscribe(TIME_TOPIC, MQTT::QOS0,
                               messageTimeArrived);
@@ -231,6 +233,7 @@ public:
     result = client.publish(topic, message);
     if (result == 0) {
       displayText("Publish Trigger Time Stamp Success", 1, 10);
+      pubCount++;
     } else {
       sprintf(buffer, "publish Trigger Time Stamp failed %d", result);
       displayText(buffer, 1, 10);
@@ -248,7 +251,7 @@ public:
       debugLed = !debugLed;
       client.yield(10);
       rtos::ThisThread::sleep_for(10ms);
-      if ((i & 0x7ff) == 0) {
+      if ((i & 0x1ff) == 0) {
           sprintf(buffer, "%2.1f  ", myData.temperature);
           message.payload = (void *)buffer;
           message.payloadlen = strlen(buffer) + 1;
@@ -260,6 +263,9 @@ public:
             strcat(buffer, topic);
             strcat(buffer, "\033[K");
             displayText(buffer, 1, 12);
+            pubCount++;
+            sprintf(buffer, "Pub Count = %d", pubCount);
+            displayText(buffer, 43, 13);
           } 
           else {
             sprintf(buffer, "publish temperature reading failed %d", result);
@@ -270,7 +276,7 @@ public:
 
           }
       }
-      if ((i & 0x7ff) == 0x200) {
+      if ((i & 0x1ff) == 0x100) {
           sprintf(buffer, "%3.1f  ", myData.lightLevel);
           message.payload = (void *)buffer;
           message.payloadlen = strlen(buffer) + 1;
@@ -282,6 +288,9 @@ public:
             strcat(buffer, topic);
             strcat(buffer, "\033[K");
             displayText(buffer, 1, 13);
+            pubCount++;
+            sprintf(buffer, "Pub Count = %d", pubCount);
+            displayText(buffer, 43, 13);
           } 
           else {
             sprintf(buffer, "publish light level failed %d", result);
